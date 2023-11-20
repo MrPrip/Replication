@@ -1,0 +1,41 @@
+
+syntax = "proto3";
+
+package Replication;
+option go_package = "proto/proto";
+
+message User {
+    int64 ClientId = 1;
+}
+
+message PlaceBid {
+    int64 ClientID = 1;
+    int64 BidAmount = 2;
+    int64 Timestamp = 3;
+}
+
+message Acknowledgement {
+    bool AcknowledgementMessage = 1;
+    int64 Timestamp = 2;
+}
+
+message Outcome {
+    int64 ClientId = 1;
+    int64 BidAmount = 2;
+    int64 Timestamp = 3;
+}
+
+message Message {
+    string id = 1;
+    string content = 2;
+    int64 lamportTime = 3;
+}
+
+message Close {}
+
+service Replication {
+    rpc ConnectToServer(User) returns (stream Message);
+    rpc Bid(PlaceBid) returns (stream Acknowledgement);
+    rpc Result(Close) returns (stream Outcome);
+    rpc BroadcastMessage(Message) returns (stream Close);
+}
