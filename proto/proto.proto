@@ -26,7 +26,7 @@ message Outcome {
 }
 
 message Message {
-    string id = 1;
+    int64 id = 1;
     string content = 2;
     int64 lamportTime = 3;
 }
@@ -34,8 +34,10 @@ message Message {
 message Close {}
 
 service Replication {
+    rpc GetIdFromServer(Close) returns (User);
     rpc ConnectToServer(User) returns (stream Message);
+    rpc BroadcastMessage(Message) returns (stream Message);
     rpc Bid(PlaceBid) returns (stream Acknowledgement);
     rpc Result(Close) returns (stream Outcome);
-    rpc BroadcastMessage(Message) returns (stream Close);
+    
 }

@@ -36,23 +36,19 @@ func main() {
 	}
 
 	client := proto.NewReplicationClient(conn)
-	
+	recivedId, _ := client.GetIdFromServer(context.Background(), &proto.Close{})
+
 	clientStruct := &Client {
-		id: 0,
+		id: recivedId.ClientId,
 		clientName: *name,
 		timestamp: 0,
 	}
-
-	stream, _ := client.ConnectToServer(context.Background(), &proto.User{ClientId: clientStruct.id})
+	stream, _ := client.ConnectToServer(context.Background(), &proto.User{ClientId: clientStruct.id,})
 
 	go func(str proto.Replication_ConnectToServerClient) {
 		for {
 			msg, _ := str.Recv()
-			// Update Lamport time when message is received
-			if msg != nil {
-				// Update Lamport time when message is received
-				fmt.Printf("%v : %s {Received at Lamport time}\n", msg.Id, msg.Content)
-			}
+			fmt.Printf("%s", msg.Content)
 		}
 	}(stream)
 	
@@ -97,13 +93,6 @@ number, err := strconv.Atoi(stringToCheck)
 	return int64(number), err == nil
 }
 
-func getMessageFromServer(str proto.Replication_ConnectToServerClient) {
-	for {
-		msg, _ := str.Recv()
-		//Update Lamport time when message is recived
-		fmt.Println(msg.Content)
-	}
-}
 
 // Client 1 -> 8080
 // 8080 modtager

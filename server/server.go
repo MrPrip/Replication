@@ -2,6 +2,7 @@ package main
 
 import (
 	proto "Replication/proto"
+	"context"
 	"flag"
 	"log"
 	"net"
@@ -36,6 +37,8 @@ type Auction struct {
 type Participant struct {
 	stream proto.Replication_ConnectToServerServer
 	id     int64
+	active bool
+	error  chan error
 }
 
 func main() {
@@ -46,11 +49,11 @@ func main() {
 		Port:        *port,
 		LamportTime: 0,
 		Auction: Auction{
-			Timer: 120,
-			IsOver: false,
+			Timer:        120,
+			IsOver:       false,
 			HigestBidder: 0,
-			HigestBid: 0,
-			Winner: 0,
+			HigestBid:    0,
+			Winner:       0,
 		},
 	}
 
@@ -79,14 +82,19 @@ func main() {
 	grpcServer.Serve(listener)
 }
 
+func (s *Server) GetIdFromServer(context context.Context, close *proto.Close) (*proto.User, error){
+	return &proto.User{ClientId: int64(len(s.Bidders))}, nil
+}
+
 func (s *Server) ConnectToServer(user *proto.User, stream proto.Replication_ConnectToServerServer) error {
 	participant := &Participant{
 		stream: stream,
-		id: user.ClientId,
+		id:     user.ClientId,
+		active: true,
 	}
 
 	s.Bidders = append(s.Bidders, participant)
-	return nil
+	return <-participant.error
 }
 
 func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) error {
@@ -94,7 +102,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 		AcknowledgementMessage: false,
 		Timestamp:              0,
 	}
-	
+
 	currentBid := bid.BidAmount
 
 	if currentBid > s.Auction.HigestBid {
@@ -102,12 +110,12 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 		s.Auction.HigestBidder = bid.ClientID
 		acknowledgment.AcknowledgementMessage = true
 		s.BroadcastMessage(&proto.Message{
-			Id: "",
-			Content: "The higest bid is now at " + strconv.Itoa(int(currentBid)) + " $",
+			Id:          bid.ClientID,
+			Content:     "The higest bid is now at $" + strconv.Itoa(int(currentBid)) + "\n",
 			LamportTime: 0,
-		}, )
+		}, s.Bidders[0].stream)
 	}
-	
+
 	// Send acknowledgment back to the client
 	if err := stream.Send(acknowledgment); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
@@ -117,11 +125,14 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 
 func (s *Server) BroadcastMessage(message *proto.Message, stream proto.Replication_BroadcastMessageServer) error {
 	for _, participant := range s.Bidders {
-		participant.stream.Send(&proto.Message{
-			Id: message.Id,
-			Content: message.Content,
-			LamportTime: message.LamportTime,
-		})
+		if participant.active && participant.id != message.Id {
+			participant.stream.Send(&proto.Message{
+				Id:          message.Id,
+				Content:     message.Content,
+				LamportTime: message.LamportTime,
+			})
+			log.Println("Message sent")
+		}
 	}
 	return nil
 }
