@@ -10,13 +10,12 @@ message User {
 
 message PlaceBid {
     int64 ClientID = 1;
-    int64 BidAmount = 2;
-    int64 Timestamp = 3;
+    string ClientName = 2;
+    int64 BidAmount = 3;
 }
 
 message Acknowledgement {
     string AcknowledgementMessage = 1;
-    int64 Timestamp = 2;
 }
 
 message Outcome {
@@ -26,7 +25,6 @@ message Outcome {
 message Message {
     int64 id = 1;
     string content = 2;
-    int64 lamportTime = 3;
 }
 
 message Close {}

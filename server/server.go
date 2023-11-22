@@ -16,49 +16,45 @@ import (
 
 var (
 	port    = flag.Int64("sPort", 8080, "Centrel server port")
-	bidders []*Participant
+	bidders = make(map[string]*Participant)
 )
 
 type Server struct {
 	proto.UnimplementedReplicationServer
-	Bidders     []*Participant
-	Port        int64
-	BackupServerPort int64
+	Bidders            map[string]*Participant
+	idCounter          int64
+	Port               int64
+	BackupServerPort   int64
 	BackupServerClient proto.ReplicationClient
-	LamportTime int64
-	Auction     Auction
+	Auction            Auction
 }
 
 type Auction struct {
-	StartTimer   int
 	Timer        int
 	IsOver       bool
-	HigestBidder int64
+	HigestBidder string
 	HigestBid    int64
 	Winner       int64
 }
 
 type Participant struct {
-	stream proto.Replication_ConnectToServerServer
-	id     int64
-	active bool
-	error  chan error
+	id   int64
+	name string
 }
 
 func main() {
 	flag.Parse()
 
 	server := &Server{
-		Bidders:     bidders,
-		Port:        *port,
-		BackupServerPort: *port+1,
+		Bidders:            bidders,
+		idCounter:          0,
+		Port:               *port,
+		BackupServerPort:   *port + 1,
 		BackupServerClient: nil,
-		LamportTime: 0,
 		Auction: Auction{
-			StartTimer:   120,
 			Timer:        120,
 			IsOver:       false,
-			HigestBidder: 0,
+			HigestBidder: "",
 			HigestBid:    0,
 			Winner:       0,
 		},
@@ -79,7 +75,7 @@ func main() {
 	}
 
 	time.Sleep(5 * time.Second)
-	
+
 	conn, err := grpc.Dial("localhost:"+strconv.Itoa(int(server.BackupServerPort)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("No packup server started at port: %d", server.BackupServerPort)
@@ -89,7 +85,7 @@ func main() {
 
 	log.Printf("Started server at port: %d\n", server.Port)
 
-	// Simulate crash one minute after start
+	// Simulate crash if server is running on port 8080 (main server)
 	if server.Port == 8080 {
 		go server.die()
 	}
@@ -99,30 +95,35 @@ func main() {
 }
 
 func (s *Server) GetIdFromServer(context context.Context, close *proto.Close) (*proto.User, error) {
-	return &proto.User{ClientId: int64(len(s.Bidders))}, nil
-}
-
-func (s *Server) ConnectToServer(user *proto.User, stream proto.Replication_ConnectToServerServer) error {
-	participant := &Participant{
-		stream: stream,
-		id:     user.ClientId,
-		active: true,
-	}
-
-	s.Bidders = append(s.Bidders, participant)
-	return <-participant.error
+	user := &proto.User{ClientId: s.idCounter}
+	s.idCounter++
+	return user, nil
 }
 
 func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) error {
-	if s.Auction.Timer == s.Auction.StartTimer {
+	// start auction timer if first bid is made
+	if s.Auction.Timer == 120 {
 		go func() {
-			time.Sleep(time.Duration(s.Auction.Timer) * time.Second)
+			for s.Auction.Timer >= 0 {
+				time.Sleep(1 * time.Second)
+				s.Auction.Timer = s.Auction.Timer - 1
+			}
 			s.Auction.IsOver = true
 		}()
 	}
+
+	// Register user when they bid
+	if !checkIfParticipantIsRegisered(s.Bidders, bid.ClientName) {
+		participant := &Participant{
+			id:   bid.ClientID,
+			name: bid.ClientName,
+		}
+		s.Bidders[bid.ClientName] = participant
+	}
+
+
 	acknowledgment := &proto.Acknowledgement{
 		AcknowledgementMessage: "Your bid was lower than the winning bid. The winning bid is currently at $" + strconv.Itoa(int(s.Auction.HigestBid)),
-		Timestamp:              0,
 	}
 
 	if s.Auction.IsOver {
@@ -132,14 +133,12 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 
 		if currentBid > s.Auction.HigestBid {
 			s.Auction.HigestBid = currentBid
-			s.Auction.HigestBidder = bid.ClientID
-			acknowledgment.AcknowledgementMessage = "The bid was placed with the auction"
+			s.Auction.HigestBidder = bid.ClientName
+			acknowledgment.AcknowledgementMessage = "The bid was placed with the auction " + strconv.Itoa(int(bid.ClientID))
 			s.BackupServerClient.Bid(context.Background(), &proto.PlaceBid{
-				ClientID: bid.ClientID,
+				ClientID:  bid.ClientID,
 				BidAmount: bid.BidAmount,
-				Timestamp: bid.Timestamp,
 			})
-			log.Println(currentBid)
 		}
 	}
 
@@ -152,7 +151,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 
 func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServer) error {
 	outcome := &proto.Outcome{
-		RepyMessage: "The winner of the auction is " + strconv.Itoa(int(s.Auction.HigestBidder)),
+		RepyMessage: "The winner of the auction is " + s.Auction.HigestBidder,
 	}
 
 	if !s.Auction.IsOver {
@@ -166,6 +165,17 @@ func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServe
 	return nil
 }
 
+// Check if client is registered with the auction
+func checkIfParticipantIsRegisered(list map[string]*Participant, clientName string) bool {
+	for _, participant := range list {
+		if participant.name == clientName {
+			return true
+		}
+	}
+	return false
+}
+
+// Make the server die after 30 seconds
 func (s *Server) die() {
 	time.Sleep(30 * time.Second)
 	os.Exit(0)
