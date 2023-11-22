@@ -98,6 +98,7 @@ func (s *Server) ConnectToServer(user *proto.User, stream proto.Replication_Conn
 }
 
 func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) error {
+	//if s.Auction.Timer == 120 { go }
 	acknowledgment := &proto.Acknowledgement{
 		AcknowledgementMessage: false,
 		Timestamp:              0,
@@ -109,30 +110,12 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 		s.Auction.HigestBid = currentBid
 		s.Auction.HigestBidder = bid.ClientID
 		acknowledgment.AcknowledgementMessage = true
-		s.BroadcastMessage(&proto.Message{
-			Id:          bid.ClientID,
-			Content:     "The higest bid is now at $" + strconv.Itoa(int(currentBid)) + "\n",
-			LamportTime: 0,
-		}, s.Bidders[0].stream)
+		log.Println(currentBid)
 	}
 
 	// Send acknowledgment back to the client
 	if err := stream.Send(acknowledgment); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
-	}
-	return nil
-}
-
-func (s *Server) BroadcastMessage(message *proto.Message, stream proto.Replication_BroadcastMessageServer) error {
-	for _, participant := range s.Bidders {
-		if participant.active && participant.id != message.Id {
-			participant.stream.Send(&proto.Message{
-				Id:          message.Id,
-				Content:     message.Content,
-				LamportTime: message.LamportTime,
-			})
-			log.Println("Message sent")
-		}
 	}
 	return nil
 }

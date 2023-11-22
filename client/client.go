@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	//"net"
 	proto "Replication/proto"
@@ -30,51 +31,42 @@ type Client struct {
 func main() {
 	flag.Parse()
 
-	conn, err := grpc.Dial("localhost:"+strconv.Itoa(*port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("Could not connect to port %d", *port)
-	}
+	var client proto.ReplicationClient
+	var recivedId *proto.User
 
-	client := proto.NewReplicationClient(conn)
-	recivedId, _ := client.GetIdFromServer(context.Background(), &proto.Close{})
+	client, recivedId = connectToServer(*port)
+	
 
 	clientStruct := &Client {
 		id: recivedId.ClientId,
 		clientName: *name,
 		timestamp: 0,
 	}
-	stream, _ := client.ConnectToServer(context.Background(), &proto.User{ClientId: clientStruct.id,})
-
-	go func(str proto.Replication_ConnectToServerClient) {
-		for {
-			msg, _ := str.Recv()
-			fmt.Printf("%s", msg.Content)
-		}
-	}(stream)
 	
-
+	
+	log.Println("You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
+		// Check if client is connect to running server
 		tempMessageHolder := scanner.Text()
 		if tempMessageHolder == "exit" {
 			log.Printf("You've left the auction. \n Goodbye!")
 			os.Exit(1)
 		}
 
-		// check if tempMessageHolder is a number
 		returnNumber, isNumber := isNumeric(tempMessageHolder)
 		if isNumber {
-			reply, err := client.Bid(context.Background(), &proto.PlaceBid{
-				ClientID: clientStruct.id,
-				BidAmount: returnNumber,
-				Timestamp: clientStruct.timestamp,
-			})
-			if err != nil {
-				fmt.Println("There was an error placing the bid")
+			var reply proto.Replication_BidClient
+			var err error
+			reply, err = sendBid(*clientStruct, client, returnNumber)
+			for err != nil {
+				client, _ = connectToServer(*port+1)
+				reply, err = sendBid(*clientStruct, client, returnNumber)
 			}
 			t, _ := reply.Recv()
 			
 			if !t.AcknowledgementMessage {
+				// call result RPC method
 				fmt.Println("Your bid was lower than the winning bid")
 			} else {
 				fmt.Println("The bid was placed with the auction")
@@ -85,8 +77,41 @@ func main() {
 	}
 }
 
+func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
+	conn, err := grpc.Dial("localhost:"+strconv.Itoa(port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Could not connect to port %d", port)
+	}
+
+	client := proto.NewReplicationClient(conn)
+
+	recivedId, errGetID := client.GetIdFromServer(context.Background(), &proto.Close{})
+
+	time.Sleep(2*time.Second)
+
+	if errGetID != nil {
+		client, recivedId := connectToServer(port+1)	
+		return client, recivedId
+	}	
+
+	return client, recivedId
+}
+
+func sendBid(clientStruct Client, client proto.ReplicationClient, bidAmount int64) (proto.Replication_BidClient, error){
+	reply, err := client.Bid(context.Background(), &proto.PlaceBid{
+		ClientID: clientStruct.id,
+		BidAmount: bidAmount,
+		Timestamp: clientStruct.timestamp,
+	})
+	time.Sleep(2*time.Second)
+	if err != nil {
+		return reply, err
+	}
+	return reply, nil
+}
+
 func isNumeric(stringToCheck string) (int64, bool) {
-number, err := strconv.Atoi(stringToCheck)
+	number, err := strconv.Atoi(stringToCheck)
 	if err != nil {
 		return 0, err == nil
 	}
