@@ -34,7 +34,6 @@ message Close {}
 service Replication {
     rpc GetIdFromServer(Close) returns (User);
     rpc ConnectToServer(User) returns (stream Message);
-    rpc BroadcastMessage(Message) returns (stream Message);
     rpc Bid(PlaceBid) returns (stream Acknowledgement);
     rpc Result(Close) returns (stream Outcome);
     

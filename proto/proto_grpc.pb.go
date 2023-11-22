@@ -19,11 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Replication_GetIdFromServer_FullMethodName  = "/Replication.Replication/GetIdFromServer"
-	Replication_ConnectToServer_FullMethodName  = "/Replication.Replication/ConnectToServer"
-	Replication_BroadcastMessage_FullMethodName = "/Replication.Replication/BroadcastMessage"
-	Replication_Bid_FullMethodName              = "/Replication.Replication/Bid"
-	Replication_Result_FullMethodName           = "/Replication.Replication/Result"
+	Replication_GetIdFromServer_FullMethodName = "/Replication.Replication/GetIdFromServer"
+	Replication_ConnectToServer_FullMethodName = "/Replication.Replication/ConnectToServer"
+	Replication_Bid_FullMethodName             = "/Replication.Replication/Bid"
+	Replication_Result_FullMethodName          = "/Replication.Replication/Result"
 )
 
 // ReplicationClient is the client API for Replication service.
@@ -32,7 +31,6 @@ const (
 type ReplicationClient interface {
 	GetIdFromServer(ctx context.Context, in *Close, opts ...grpc.CallOption) (*User, error)
 	ConnectToServer(ctx context.Context, in *User, opts ...grpc.CallOption) (Replication_ConnectToServerClient, error)
-	BroadcastMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (Replication_BroadcastMessageClient, error)
 	Bid(ctx context.Context, in *PlaceBid, opts ...grpc.CallOption) (Replication_BidClient, error)
 	Result(ctx context.Context, in *Close, opts ...grpc.CallOption) (Replication_ResultClient, error)
 }
@@ -86,40 +84,8 @@ func (x *replicationConnectToServerClient) Recv() (*Message, error) {
 	return m, nil
 }
 
-func (c *replicationClient) BroadcastMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (Replication_BroadcastMessageClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Replication_ServiceDesc.Streams[1], Replication_BroadcastMessage_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &replicationBroadcastMessageClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Replication_BroadcastMessageClient interface {
-	Recv() (*Message, error)
-	grpc.ClientStream
-}
-
-type replicationBroadcastMessageClient struct {
-	grpc.ClientStream
-}
-
-func (x *replicationBroadcastMessageClient) Recv() (*Message, error) {
-	m := new(Message)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *replicationClient) Bid(ctx context.Context, in *PlaceBid, opts ...grpc.CallOption) (Replication_BidClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Replication_ServiceDesc.Streams[2], Replication_Bid_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Replication_ServiceDesc.Streams[1], Replication_Bid_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +117,7 @@ func (x *replicationBidClient) Recv() (*Acknowledgement, error) {
 }
 
 func (c *replicationClient) Result(ctx context.Context, in *Close, opts ...grpc.CallOption) (Replication_ResultClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Replication_ServiceDesc.Streams[3], Replication_Result_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &Replication_ServiceDesc.Streams[2], Replication_Result_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +154,6 @@ func (x *replicationResultClient) Recv() (*Outcome, error) {
 type ReplicationServer interface {
 	GetIdFromServer(context.Context, *Close) (*User, error)
 	ConnectToServer(*User, Replication_ConnectToServerServer) error
-	BroadcastMessage(*Message, Replication_BroadcastMessageServer) error
 	Bid(*PlaceBid, Replication_BidServer) error
 	Result(*Close, Replication_ResultServer) error
 	mustEmbedUnimplementedReplicationServer()
@@ -203,9 +168,6 @@ func (UnimplementedReplicationServer) GetIdFromServer(context.Context, *Close) (
 }
 func (UnimplementedReplicationServer) ConnectToServer(*User, Replication_ConnectToServerServer) error {
 	return status.Errorf(codes.Unimplemented, "method ConnectToServer not implemented")
-}
-func (UnimplementedReplicationServer) BroadcastMessage(*Message, Replication_BroadcastMessageServer) error {
-	return status.Errorf(codes.Unimplemented, "method BroadcastMessage not implemented")
 }
 func (UnimplementedReplicationServer) Bid(*PlaceBid, Replication_BidServer) error {
 	return status.Errorf(codes.Unimplemented, "method Bid not implemented")
@@ -262,27 +224,6 @@ type replicationConnectToServerServer struct {
 }
 
 func (x *replicationConnectToServerServer) Send(m *Message) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Replication_BroadcastMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Message)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ReplicationServer).BroadcastMessage(m, &replicationBroadcastMessageServer{stream})
-}
-
-type Replication_BroadcastMessageServer interface {
-	Send(*Message) error
-	grpc.ServerStream
-}
-
-type replicationBroadcastMessageServer struct {
-	grpc.ServerStream
-}
-
-func (x *replicationBroadcastMessageServer) Send(m *Message) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -344,11 +285,6 @@ var Replication_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ConnectToServer",
 			Handler:       _Replication_ConnectToServer_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "BroadcastMessage",
-			Handler:       _Replication_BroadcastMessage_Handler,
 			ServerStreams: true,
 		},
 		{
