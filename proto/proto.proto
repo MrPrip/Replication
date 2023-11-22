@@ -15,14 +15,12 @@ message PlaceBid {
 }
 
 message Acknowledgement {
-    bool AcknowledgementMessage = 1;
+    string AcknowledgementMessage = 1;
     int64 Timestamp = 2;
 }
 
 message Outcome {
-    int64 ClientId = 1;
-    int64 BidAmount = 2;
-    int64 Timestamp = 3;
+    string RepyMessage = 1;
 }
 
 message Message {

@@ -98,23 +98,48 @@ func (s *Server) ConnectToServer(user *proto.User, stream proto.Replication_Conn
 }
 
 func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) error {
-	//if s.Auction.Timer == 120 { go }
+	if s.Auction.Timer == 120 { 
+		go func() {
+			time.Sleep(time.Duration(s.Auction.Timer) * time.Second)
+			s.Auction.IsOver = true;
+		}()
+	}
 	acknowledgment := &proto.Acknowledgement{
-		AcknowledgementMessage: false,
+		AcknowledgementMessage: "Your bid was lower than the winning bid. The winning bid is currently at $" + strconv.Itoa(int(s.Auction.HigestBid)),
 		Timestamp:              0,
 	}
 
-	currentBid := bid.BidAmount
+	if s.Auction.IsOver {
+		acknowledgment.AcknowledgementMessage = "The auction is over. Type 'result' to view the winner."
+	} else {
+		currentBid := bid.BidAmount
 
-	if currentBid > s.Auction.HigestBid {
-		s.Auction.HigestBid = currentBid
-		s.Auction.HigestBidder = bid.ClientID
-		acknowledgment.AcknowledgementMessage = true
-		log.Println(currentBid)
+		if currentBid > s.Auction.HigestBid {
+			s.Auction.HigestBid = currentBid
+			s.Auction.HigestBidder = bid.ClientID
+			acknowledgment.AcknowledgementMessage = "The bid was placed with the auction"
+			log.Println(currentBid)
+		}
 	}
 
 	// Send acknowledgment back to the client
 	if err := stream.Send(acknowledgment); err != nil {
+		log.Printf("Error sending acknowledgment: %v", err)
+	}
+	return nil
+}
+
+func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServer) (error) {
+	outcome := &proto.Outcome{
+		RepyMessage: "The winner of the auction is " + strconv.Itoa(int(s.Auction.HigestBidder)),
+	}
+
+	if !s.Auction.IsOver {
+		outcome.RepyMessage = "The higest bid is currently $" + strconv.Itoa(int(s.Auction.HigestBid))
+	} 
+
+	// Send acknowledgment back to the client
+	if err := stream.Send(outcome); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
 	}
 	return nil

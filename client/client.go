@@ -33,6 +33,7 @@ func main() {
 
 	var client proto.ReplicationClient
 	var recivedId *proto.User
+	//var stream proto.Replication_ConnectToServerClient
 
 	client, recivedId = connectToServer(*port)
 	
@@ -52,27 +53,31 @@ func main() {
 		if tempMessageHolder == "exit" {
 			log.Printf("You've left the auction. \n Goodbye!")
 			os.Exit(1)
-		}
-
-		returnNumber, isNumber := isNumeric(tempMessageHolder)
-		if isNumber {
-			var reply proto.Replication_BidClient
-			var err error
-			reply, err = sendBid(*clientStruct, client, returnNumber)
-			for err != nil {
-				client, _ = connectToServer(*port+1)
-				reply, err = sendBid(*clientStruct, client, returnNumber)
-			}
-			t, _ := reply.Recv()
-			
-			if !t.AcknowledgementMessage {
-				// call result RPC method
-				fmt.Println("Your bid was lower than the winning bid")
-			} else {
-				fmt.Println("The bid was placed with the auction")
-			}
+		} else if tempMessageHolder == "result" {
+				
+				var err error
+				err = getResult(*clientStruct, client)
+				for err != nil {
+					client, _ = connectToServer(*port+1)
+					err = getResult(*clientStruct, client)
+				}
 		} else {
-			fmt.Println("You must enter a number to place a bid")
+			// check if tempMessageHolder is a number
+			returnNumber, isNumber := isNumeric(tempMessageHolder)
+			if isNumber {
+				var reply proto.Replication_BidClient
+				var err error
+				reply, err = sendBid(*clientStruct, client, returnNumber)
+				for err != nil {
+					client, _ = connectToServer(*port+1)
+					reply, err = sendBid(*clientStruct, client, returnNumber)
+				}
+				replyMessage, _ := reply.Recv()
+				
+				fmt.Println(replyMessage.AcknowledgementMessage)
+			} else {
+				fmt.Println("You must enter a number to place a bid")
+			}
 		}
 	}
 }
@@ -86,6 +91,7 @@ func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
 	client := proto.NewReplicationClient(conn)
 
 	recivedId, errGetID := client.GetIdFromServer(context.Background(), &proto.Close{})
+	//stream, errGetConnection := client.ConnectToServer(context.Background(), &proto.User{ClientId: recivedId.ClientId,})
 
 	time.Sleep(2*time.Second)
 
@@ -95,6 +101,17 @@ func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
 	}	
 
 	return client, recivedId
+}
+
+func getResult(clientStruct Client, client proto.ReplicationClient) error {
+	reply, err := client.Result(context.Background(), &proto.Close{})
+	time.Sleep(2*time.Second)
+	if err != nil {
+		return err
+	}
+	replyMessage, _ := reply.Recv()
+	fmt.Println(replyMessage.RepyMessage)
+	return  nil
 }
 
 func sendBid(clientStruct Client, client proto.ReplicationClient, bidAmount int64) (proto.Replication_BidClient, error){
