@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	//"time"
 	"strconv"
 	proto "Replication/proto"
 	"google.golang.org/grpc"
@@ -15,8 +14,12 @@ import (
 )
 
 var (
-	port = flag.Int("server", 8080, "Port for server")
 	name = flag.String("name", "John Doe", "Client name")
+)
+
+const (
+	port = 8080
+	logFilePath = "../programLog.txt"
 )
 
 type Client struct {
@@ -26,31 +29,52 @@ type Client struct {
 
 func main() {
 	flag.Parse()
-
+	
 	var client proto.ReplicationClient
 	var recivedId *proto.User
 
-	client, recivedId = connectToServer(*port)
+	client, recivedId = connectToServer(port)
 	
 
 	clientStruct := &Client {
 		id: recivedId.ClientId,
 		clientName: *name,
 	}
+
 	
+
+	_, err := os.Stat(logFilePath)
+	if os.IsNotExist(err) {
+		// If the file does not exist, create it
+		file, createErr := os.Create(logFilePath)
+		if createErr != nil {
+			log.Fatal("Error creating log file:", createErr)
+		}
+		defer file.Close()
+	}
+	
+	// Open the log file
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		log.Fatal("Error opening log file:", err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
 	
 	log.Println("You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
+	fmt.Println("You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		tempMessageHolder := scanner.Text()
 		if tempMessageHolder == "exit" {
 			log.Printf("You have left the auction. \n Goodbye!")
+			fmt.Printf("You have left the auction. \n Goodbye!")
 			os.Exit(1)
 		} else if tempMessageHolder == "result" {
 			var err error
 			err = getResult(*clientStruct, client)
 			for err != nil {
-				client, _ = connectToServer(*port+1)
+				client, _ = connectToServer(port+1)
 				err = getResult(*clientStruct, client)
 			}
 		} else {
@@ -61,13 +85,15 @@ func main() {
 				var err error
 				reply, err = sendBid(*clientStruct, client, returnNumber)
 				for err != nil {
-					client, _ = connectToServer(*port+1)
+					client, _ = connectToServer(port+1)
 					reply, err = sendBid(*clientStruct, client, returnNumber)
 				}
 				replyMessage, _ := reply.Recv()
+				log.Println(replyMessage.AcknowledgementMessage)
 				fmt.Println(replyMessage.AcknowledgementMessage)
 			} else {
-				fmt.Println("You must enter a number to place a bid")
+				fmt.Println("You can either enter a number to place a bid or use the commands ('result' or 'exit')")
+				fmt.Println("You can either enter a number to place a bid or use the commands ('result' or 'exit')")
 			}
 		}
 	}
@@ -78,16 +104,16 @@ func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
 	if err != nil {
 		log.Fatalf("Could not connect to port %d", port)
 	}
-
+	
 	client := proto.NewReplicationClient(conn)
-
+	
 	recivedId, errGetID := client.GetIdFromServer(context.Background(), &proto.Close{})
-
+	
 	if errGetID != nil {
 		client, recivedId := connectToServer(port+1)	
 		return client, recivedId
 	}	
-
+	
 	return client, recivedId
 }
 
@@ -98,7 +124,7 @@ func getResult(clientStruct Client, client proto.ReplicationClient) error {
 		return err
 	}
 	replyMessage, _ := reply.Recv()
-	fmt.Println(replyMessage.RepyMessage)
+	log.Println(replyMessage.RepyMessage)
 	return  nil
 }
 

@@ -9,14 +9,17 @@ import (
 	"os"
 	"strconv"
 	"time"
-
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
-	port    = flag.Int64("sPort", 8080, "Centrel server port")
 	bidders = make(map[string]*Participant)
+)
+
+const (
+	port = 8080
 )
 
 type Server struct {
@@ -34,7 +37,6 @@ type Auction struct {
 	IsOver       bool
 	HigestBidder string
 	HigestBid    int64
-	Winner       int64
 }
 
 type Participant struct {
@@ -48,15 +50,14 @@ func main() {
 	server := &Server{
 		Bidders:            bidders,
 		idCounter:          0,
-		Port:               *port,
-		BackupServerPort:   *port + 1,
+		Port:               port,
+		BackupServerPort:   port + 1,
 		BackupServerClient: nil,
 		Auction: Auction{
 			Timer:        120,
 			IsOver:       false,
 			HigestBidder: "",
 			HigestBid:    0,
-			Winner:       0,
 		},
 	}
 
@@ -73,22 +74,44 @@ func main() {
 		}
 		break
 	}
+	logFilePath := "../programLog.txt"
+
+	_, logerr := os.Stat(logFilePath)
+	if os.IsNotExist(logerr) {
+		// If the file does not exist, create it
+		file, createErr := os.Create(logFilePath)
+		if createErr != nil {
+			log.Fatal("Error creating log file:", createErr)
+		}
+		defer file.Close()
+	}
+	
+	// Open the log file
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		log.Fatal("Error opening log file:", err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
 
 	time.Sleep(5 * time.Second)
 
 	conn, err := grpc.Dial("localhost:"+strconv.Itoa(int(server.BackupServerPort)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Printf("No packup server started at port: %d", server.BackupServerPort)
+		log.Printf("No backup server started at port: %d", server.BackupServerPort)
+		fmt.Printf("No backup server started at port: %d", server.BackupServerPort)
 	} else {
 		server.BackupServerClient = proto.NewReplicationClient(conn)
 	}
 
 	log.Printf("Started server at port: %d\n", server.Port)
+	fmt.Printf("Started server at port: %d\n", server.Port)
 
 	// Simulate crash if server is running on port 8080 (main server)
 	if server.Port == 8080 {
 		go server.die()
 	}
+	
 
 	proto.RegisterReplicationServer(grpcServer, server)
 	grpcServer.Serve(listener)
@@ -123,7 +146,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 
 
 	acknowledgment := &proto.Acknowledgement{
-		AcknowledgementMessage: "Your bid was lower than the winning bid. The winning bid is currently at $" + strconv.Itoa(int(s.Auction.HigestBid)),
+		AcknowledgementMessage: "Hi " + bid.ClientName + ". Your bid was lower than the winning bid. The winning bid is currently at $" + strconv.Itoa(int(s.Auction.HigestBid)),
 	}
 
 	if s.Auction.IsOver {
@@ -134,7 +157,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 		if currentBid > s.Auction.HigestBid {
 			s.Auction.HigestBid = currentBid
 			s.Auction.HigestBidder = bid.ClientName
-			acknowledgment.AcknowledgementMessage = "The bid was placed with the auction " + strconv.Itoa(int(bid.ClientID))
+			acknowledgment.AcknowledgementMessage = "Hi " + bid.ClientName + " the bid was placed with the auction"
 			s.BackupServerClient.Bid(context.Background(), &proto.PlaceBid{
 				ClientID:  bid.ClientID,
 				BidAmount: bid.BidAmount,
@@ -145,6 +168,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 	// Send acknowledgment back to the client
 	if err := stream.Send(acknowledgment); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
+		fmt.Printf("Error sending acknowledgment: %v", err)
 	}
 	return nil
 }
@@ -161,6 +185,7 @@ func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServe
 	// Send acknowledgment back to the client
 	if err := stream.Send(outcome); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
+		fmt.Printf("Error sending acknowledgment: %v", err)
 	}
 	return nil
 }
@@ -177,6 +202,10 @@ func checkIfParticipantIsRegisered(list map[string]*Participant, clientName stri
 
 // Make the server die after 30 seconds
 func (s *Server) die() {
+	log.Println("Killing primary server after 30 seconds")
+	fmt.Println("Killing primary server after 30 seconds");
 	time.Sleep(30 * time.Second)
+	log.Println("Killing primary server now")
+	fmt.Println("Killing primary server now");
 	os.Exit(0)
 }
