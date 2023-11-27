@@ -5,11 +5,10 @@ package Replication;
 option go_package = "proto/proto";
 
 message User {
-    int64 ClientId = 1;
+    string ClientName = 1;
 }
 
 message PlaceBid {
-    int64 ClientID = 1;
     string ClientName = 2;
     int64 BidAmount = 3;
 }
@@ -23,14 +22,12 @@ message Outcome {
 }
 
 message Message {
-    int64 id = 1;
     string content = 2;
 }
 
 message Close {}
 
 service Replication {
-    rpc GetIdFromServer(Close) returns (User);
     rpc ConnectToServer(User) returns (stream Message);
     rpc Bid(PlaceBid) returns (stream Acknowledgement);
     rpc Result(Close) returns (stream Outcome);

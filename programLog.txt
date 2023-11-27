@@ -1,0 +1,46 @@
+2023/11/27 09:40:02 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:40:27 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:40:59 Started server at port: 8080
+2023/11/27 09:40:59 Killing primary server after 30 seconds
+2023/11/27 09:41:03 Started server at port: 8081
+2023/11/27 09:41:09 Hi Oliver the bid was placed with the auction
+2023/11/27 09:41:16 Hi Oliver the bid was placed with the auction
+2023/11/27 09:42:50 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:42:59 Started server at port: 8080
+2023/11/27 09:42:59 Killing primary server after 30 seconds
+2023/11/27 09:43:00 Started server at port: 8081
+2023/11/27 09:43:03 A bid of $200 was placed by Oliver
+2023/11/27 09:43:03 Hi Oliver the bid was placed with the auction
+2023/11/27 09:43:50 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:44:00 Started server at port: 8080
+2023/11/27 09:44:00 Killing primary server after 30 seconds
+2023/11/27 09:44:01 Started server at port: 8081
+2023/11/27 09:44:09 A bid of $200 was placed by Oliver at port 8081
+2023/11/27 09:44:09 Hi Oliver the bid was placed with the auction
+2023/11/27 09:46:57 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:46:57 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:47:05 Started server at port: 8080
+2023/11/27 09:47:05 Killing primary server after 30 seconds
+2023/11/27 09:47:09 Started server at port: 8081
+2023/11/27 09:47:18 A bid of $100 was placed by Oliver at port 8080
+2023/11/27 09:47:18 Hi Oliver the bid was placed with the auction
+2023/11/27 09:47:21 Hi Casper. Your bid was lower than the winning bid. The winning bid is currently at $100
+2023/11/27 09:47:21 A bid of $100 was placed by Oliver at port 8081
+2023/11/27 09:48:02 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:48:04 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/27 09:48:04 Started server at port: 8080
+2023/11/27 09:48:04 Killing primary server after 30 seconds
+2023/11/27 09:48:06 Started server at port: 8081
+2023/11/27 09:48:14 A bid of $100 was placed by Oliver at port 8080
+2023/11/27 09:48:14 Hi Oliver the bid was placed with the auction
+2023/11/27 09:48:17 A bid of $100 was placed by Oliver at port 8081
+2023/11/27 09:48:17 The higest bid is currently $100
+2023/11/27 09:48:34 A bid of $200 was placed by Oliver at port 8080
+2023/11/27 09:48:34 Hi Oliver the bid was placed with the auction
+2023/11/27 09:48:34 Killing primary server now
+2023/11/27 09:48:37 A bid of $200 was placed by Oliver at port 8081
+2023/11/27 09:48:37 Error sending acknowledgment: rpc error: code = Unknown desc = connection error: desc = "transport is closing"
+2023/11/27 09:48:43 The higest bid is currently $200
+2023/11/27 09:48:55 A bid of $300 was placed by Oliver at port 8081
+2023/11/27 09:48:55 Hi Oliver the bid was placed with the auction
+2023/11/27 09:49:15 The higest bid is currently $300

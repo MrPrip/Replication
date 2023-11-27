@@ -23,7 +23,6 @@ const (
 )
 
 type Client struct {
-	id int64
 	clientName string
 }
 
@@ -31,13 +30,11 @@ func main() {
 	flag.Parse()
 	
 	var client proto.ReplicationClient
-	var recivedId *proto.User
 
-	client, recivedId = connectToServer(port)
+	client = connectToServer(port)
 	
 
 	clientStruct := &Client {
-		id: recivedId.ClientId,
 		clientName: *name,
 	}
 
@@ -74,18 +71,17 @@ func main() {
 			var err error
 			err = getResult(*clientStruct, client)
 			for err != nil {
-				client, _ = connectToServer(port+1)
+				client = connectToServer(port+1)
 				err = getResult(*clientStruct, client)
 			}
 		} else {
-			// check if tempMessageHolder is a number
 			returnNumber := isNumeric(tempMessageHolder)
 			if returnNumber > 0 {
 				var reply proto.Replication_BidClient
 				var err error
 				reply, err = sendBid(*clientStruct, client, returnNumber)
 				for err != nil {
-					client, _ = connectToServer(port+1)
+					client = connectToServer(port+1)
 					reply, err = sendBid(*clientStruct, client, returnNumber)
 				}
 				replyMessage, _ := reply.Recv()
@@ -99,7 +95,7 @@ func main() {
 	}
 }
 
-func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
+func connectToServer(port int) (proto.ReplicationClient) {
 	conn, err := grpc.Dial("localhost:"+strconv.Itoa(port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Could not connect to port %d", port)
@@ -107,14 +103,7 @@ func connectToServer(port int) (proto.ReplicationClient, *proto.User) {
 	
 	client := proto.NewReplicationClient(conn)
 	
-	recivedId, errGetID := client.GetIdFromServer(context.Background(), &proto.Close{})
-	
-	if errGetID != nil {
-		client, recivedId := connectToServer(port+1)	
-		return client, recivedId
-	}	
-	
-	return client, recivedId
+	return client
 }
 
 func getResult(clientStruct Client, client proto.ReplicationClient) error {
@@ -130,7 +119,6 @@ func getResult(clientStruct Client, client proto.ReplicationClient) error {
 
 func sendBid(clientStruct Client, client proto.ReplicationClient, bidAmount int64) (proto.Replication_BidClient, error){
 	reply, err := client.Bid(context.Background(), &proto.PlaceBid{
-		ClientID: clientStruct.id,
 		ClientName: clientStruct.clientName,
 		BidAmount: bidAmount,
 	})
