@@ -58,14 +58,14 @@ func main() {
 	defer logFile.Close()
 	log.SetOutput(logFile)
 	
-	log.Println("You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
-	fmt.Println("You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
+	log.Println(clientStruct.clientName + " entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
+	fmt.Println(clientStruct.clientName + " entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.");
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		tempMessageHolder := scanner.Text()
 		if tempMessageHolder == "exit" {
-			log.Printf("You have left the auction. \n Goodbye!")
-			fmt.Printf("You have left the auction. \n Goodbye!")
+			log.Printf(clientStruct.clientName + " have left the auction. \n Goodbye!")
+			fmt.Printf(clientStruct.clientName + " have left the auction. \n Goodbye!")
 			os.Exit(1)
 		} else if tempMessageHolder == "result" {
 			var err error
@@ -88,8 +88,8 @@ func main() {
 				log.Println(replyMessage.AcknowledgementMessage)
 				fmt.Println(replyMessage.AcknowledgementMessage)
 			} else {
-				fmt.Println("You can either enter a number to place a bid or use the commands ('result' or 'exit')")
-				fmt.Println("You can either enter a number to place a bid or use the commands ('result' or 'exit')")
+				log.Println(clientStruct.clientName + "can either enter a number to place a bid or use the commands ('result' or 'exit')")
+				fmt.Println(clientStruct.clientName + " can either enter a number to place a bid or use the commands ('result' or 'exit')")
 			}
 		}
 	}
@@ -114,6 +114,7 @@ func getResult(clientStruct Client, client proto.ReplicationClient) error {
 	}
 	replyMessage, _ := reply.Recv()
 	log.Println(replyMessage.RepyMessage)
+	fmt.Println(replyMessage.RepyMessage)
 	return  nil
 }
 

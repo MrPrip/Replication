@@ -44,3 +44,39 @@
 2023/11/27 09:48:55 A bid of $300 was placed by Oliver at port 8081
 2023/11/27 09:48:55 Hi Oliver the bid was placed with the auction
 2023/11/27 09:49:15 The higest bid is currently $300
+2023/11/28 17:20:44 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:21:23 Started server at port: 8080
+2023/11/28 17:21:23 Killing primary server (8080) after 30 seconds
+2023/11/28 17:21:30 Started server at port: 8081
+2023/11/28 17:21:34 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:21:36 A bid of $1 was placed by Oliver at server 8081
+2023/11/28 17:21:36 Hi Oliver the bid was placed with the auction
+2023/11/28 17:21:39 A bid of $2 was placed by Oliver at server 8081
+2023/11/28 17:21:39 Hi Oliver the bid was placed with the auction
+2023/11/28 17:21:42 The higest bid is currently $2
+2023/11/28 17:22:41 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:22:42 The auction is over. Type 'result' to view the winner.
+2023/11/28 17:22:44 The winner of the auction is Oliver
+2023/11/28 17:23:01 Started server at port: 8080
+2023/11/28 17:23:01 Killing primary server (8080) after 30 seconds
+2023/11/28 17:23:02 Started server at port: 8081
+2023/11/28 17:23:03 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:23:04 A bid of $1 was placed by Oliver at server 8080
+2023/11/28 17:23:04 Hi Oliver the bid was placed with the auction
+2023/11/28 17:23:04 A bid of $1 was placed by Oliver at server 8081
+2023/11/28 17:23:06 A bid of $3 was placed by Oliver at server 8080
+2023/11/28 17:23:06 Hi Oliver the bid was placed with the auction
+2023/11/28 17:23:06 A bid of $3 was placed by Oliver at server 8081
+2023/11/28 17:23:08 The higest bid is currently $3
+2023/11/28 17:23:14 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:23:17 The higest bid is currently $3
+2023/11/28 17:23:31 Killing primary server (8080) now
+2023/11/28 17:24:13 Started server at port: 8080
+2023/11/28 17:24:13 Killing primary server (8080) after 30 seconds
+2023/11/28 17:24:14 Started server at port: 8081
+2023/11/28 17:24:17 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:24:19 A bid of $1 was placed by Oliver at server 8081
+2023/11/28 17:24:19 Hi Oliver the bid was placed with the auction
+2023/11/28 17:24:21 The higest bid is currently $1
+2023/11/28 17:24:24 You've entered an auction: To start bidding enter a bid. If you wish to exit type 'exit'.
+2023/11/28 17:24:30 The higest bid is currently $1

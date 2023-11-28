@@ -9,7 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
-	//"sync"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -34,7 +34,7 @@ type Auction struct {
 	IsOver       bool
 	HigestBidder string
 	HigestBid    int64
-	//mu           sync.Mutex
+	mu           sync.Mutex
 }
 
 type Participant struct {
@@ -112,9 +112,22 @@ func main() {
 }
 
 func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) error {
+	//s.queue
+	/*bid.lamportTime > s.lamportTime {
+		s.queue.end += bid
+		s.lamportTime = bid.lamportTime
+		break
+	} else {
+		for item t : s.queue {
+			!(bid.lamportTime < t.lamportTime) {
+				s.queue.here +=
+			}
+		}
+		break
+	}*/
+
 	//s.Auction.mu.Lock()
-	//defer s.Auction.mu.Unlock()
-	//time.Sleep(3*time.Second)
+	
 	// start auction timer if first bid is made
 	if s.Auction.Timer == 120 {
 		go func() {
@@ -154,7 +167,7 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 			log.Println("A bid of $" + strconv.Itoa(int(s.Auction.HigestBid)) + " was placed by " + s.Auction.HigestBidder + " at server " + strconv.Itoa(int(port)))
 		}
 	}
-
+	//s.Auction.mu.Unlock()
 	// Send acknowledgment back to the client
 	if err := stream.Send(acknowledgment); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
@@ -165,8 +178,8 @@ func (s *Server) Bid(bid *proto.PlaceBid, stream proto.Replication_BidServer) er
 
 func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServer) error {
 	//s.Auction.mu.Lock()
-	//defer s.Auction.mu.Unlock()
-	//time.Sleep(3*time.Second)
+	 
+
 	outcome := &proto.Outcome{
 		RepyMessage: "The winner of the auction is " + s.Auction.HigestBidder,
 	}
@@ -174,7 +187,7 @@ func (s *Server) Result(close *proto.Close, stream proto.Replication_ResultServe
 	if !s.Auction.IsOver {
 		outcome.RepyMessage = "The higest bid is currently $" + strconv.Itoa(int(s.Auction.HigestBid))
 	}
-
+	//s.Auction.mu.Unlock()
 	// Send acknowledgment back to the client
 	if err := stream.Send(outcome); err != nil {
 		log.Printf("Error sending acknowledgment: %v", err)
